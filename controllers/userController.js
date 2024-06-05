@@ -12,6 +12,46 @@ module.exports.getLikedMovies = async (req, res) => {
   }
 };
 
+module.exports.publicGetLikedMovies = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const playlist = await User.findOne({ uuid });
+    if (!playlist) {
+      return res.json({ msg: "No Playlist Found" });
+    } else {
+      const isPublic = await playlist.public;
+      if (!isPublic) {
+        return res.json({ msg: "Playlist is Private" });
+      }
+      const email = playlist.email;
+      console.log(playlist.likedMovies);
+      return res.json({ msg: "success", email, movies: playlist.likedMovies });
+    }
+  } catch (error) {
+    return res.json({ msg: "Error fetching movies." });
+  }
+};
+
+module.exports.checkAndGenerateUUID = async (req, res) => {
+  try {
+    const { email } = req.body;
+    let user = await User.findOne({ email });
+    if (user) {
+      if (!user.uuid) {
+        user.uuid = uuidv4();
+        user.public = false;
+        await user.save();
+      }
+      return res.json({ msg: "success", uuid: user.uuid });
+    } else {
+      return res.json({ msg: "User not found." });
+    }
+  } catch (error) {
+    console.error("Error generating UUID:", error);
+    return res.json({ msg: "Error generating UUID." });
+  }
+};
+
 module.exports.addToLikedMovies = async (req, res) => {
   try {
     const { email, data } = req.body;
